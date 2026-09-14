@@ -1,0 +1,4 @@
+interface:
+  display_name: "PSD 到 Unity UI"
+  short_description: "从 PSD 新建或维护 UI，保留正式适配、按清单合并并用现有工具绑定"
+  default_prompt: "使用 $psd-to-unity-ui，先识别新建或已有链条维护；保留源 PSD，使用现有导出与绑定方法，修改正式 Prefab 前列出改动清单供我确认；我仅修改适配时检查显示并维护原说明，工程内不新增辅助工具脚本。"
