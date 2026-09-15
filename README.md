@@ -4,6 +4,8 @@
 
 本仓库提供执行规则、溯源模板和只读图层检查脚本。PSD 编辑、Prefab 导出和代码绑定复用目标环境的现有工具；它不是独立的 PSD 转换器，也没有后台文件监听或通用自动合并器。
 
+版本号见 [VERSION](VERSION)，发布记录见 [CHANGELOG.md](CHANGELOG.md)。Git 标签使用 `vX.Y.Z`。
+
 ## 安装与 Git 维护
 
 需要 Git 和能够加载自定义 Skill 的 Codex 环境。下面以本工作流当前使用的 `$CODEX_HOME/skills` 目录为例；未设置 `CODEX_HOME` 时使用用户目录下的 `.codex/skills`。其他部署请使用其实际识别的技能目录。
@@ -29,12 +31,34 @@ git -C $skillPath pull --ff-only
 
 ```powershell
 git -C $skillPath diff
-git -C $skillPath add SKILL.md references templates scripts agents README.md .gitignore .gitattributes
+git -C $skillPath add SKILL.md references templates scripts agents README.md VERSION CHANGELOG.md .gitignore .gitattributes
 git -C $skillPath commit -m "Update PSD to Unity workflow"
 git -C $skillPath push
 ```
 
 只维护此 Skill 目录，不将整个 Codex 配置目录、凭据、第三方依赖或项目美术资源提交到仓库。
+
+## 调用时自动检查更新
+
+开始一项 PSD/UI 任务时，Agent 先检查本仓库 `main` 中的版本号：
+
+- 没有更高版本：继续使用本地 Skill。
+- 有新版：提示本地版本、新版本和变化；选择更新后由 Agent 自动更新到已展示的提交，再读取新规则继续任务。当前会话已明确允许本次自动更新时不重复询问。
+- 拒绝更新：本次任务使用现有版本，后续阶段不重复提示。
+- 网络不可用、本地有修改或历史分叉：说明原因并保留本地文件，继续现有版本，不自动丢弃修改。
+
+这由 Skill 指令和随附脚本在调用时执行，需要可用的 Python 3、Git 和仓库访问权限；不是 Codex 后台更新服务。首次上传的无版本号旧版需要先手动更新一次，才能获得此入口。
+
+脚本可手动调用；更新命令只在已决定更新时运行：
+
+```powershell
+python (Join-Path $skillPath 'scripts/skill_update.py') check
+python (Join-Path $skillPath 'scripts/skill_update.py') update --target-commit '<检查返回的target_commit>'
+```
+
+`check` 不改工作文件，`update` 只允许干净 `main` 快进到指定提交。更新后 Agent 重新读取当前任务所需规则；交付时注明实际执行版本。详细条件见 [版本检查与更新](references/version-updates.md)。
+
+维护者发布新版本时，同一提交更新 VERSION、CHANGELOG.md 和实际内容，推送 `main` 后在该提交创建 `vX.Y.Z` 标签，并用 `git push origin vX.Y.Z` 推送标签、核对远端指向。已有标签不移动；版本号未升高的提交不会触发更新提示。
 
 ## 如何使用
 
@@ -98,12 +122,15 @@ git -C $skillPath push
 
 ```text
 psd-to-unity-ui/
+├── VERSION                          当前版本号
+├── CHANGELOG.md                     发布变化
 ├── SKILL.md                         执行入口与阶段路由
 ├── agents/openai.yaml              Codex 显示信息与调用提示
 ├── references/                     PSD、Prefab、PLink 与维护细则
 ├── templates/                      两份固定说明的模板
 └── scripts/
     ├── inspect_psd.py              只读图层检查脚本
+    ├── skill_update.py             调用前检查与受控更新
     └── requirements.txt            检查脚本依赖
 ```
 
