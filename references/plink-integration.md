@@ -20,17 +20,16 @@
 
 优先复用目标项目现有的 PSUIResolver；旧 PSD2UI 只用于明确的兼容需求，不因本 Skill 自动安装或替换导入工具。
 
-以下是 PLink 固定输出矩阵的导航，执行前与目标仓库现行规则及导入器配置核对：
+输出位置由目标项目现行规则、工具持久化配置及已确认的参数确定，本 Skill 不另立固定目录。生成前读取实际 Importer 的 Module Name 与工程 PS Importer 设置，由现成工具的路径规则解析最终位置：
 
-| 产物 | 相对项目根的路径 |
+| 产物 | 当前工具配置来源 |
 |---|---|
-| Sprite / Texture 切图 | `client/Assets/AZ_RProject/Arts/UI/Images/<Module>/` |
-| SpriteAtlas | `client/Assets/AZ_RProject/Res/Atlas/<Module>/` |
-| UI Prefab | `client/Assets/AZ_RProject/Res/UI/<Module>/` |
-| 项目内编辑器工具（仅用户明确要求新增项目脚本时） | `client/Assets/AZ_RProject/Scripts/Editor/UI/<Module>/` |
-| 生成绑定及按需求实现的 Hot UI 功能代码 | `client/Assets/AZ_RProject/Scripts/Hot/UI/<PanelName>/` |
+| Sprite / Texture 切图 | `imageOutputRoot` / `textureOutputRoot`、Texture 开关与尺寸阈值、模块层级 |
+| SpriteAtlas | `atlasOutputRoot` 与图集命名模板 |
+| UI Prefab | `prefabOutputRoot` 与 Prefab 命名模板 |
+| 面板 / Item 代码 | 按项目 UI 规范在现成代码生成工具中指定的最终目录 |
 
-工程内编辑器工具路径仅作条件导航，本个人流程直接复用已有导出和绑定实现，不新增工程内辅助脚本或永久菜单。完整流程包括现有生成器产出的绑定代码；具体功能代码按需求实现。项目专用自动化脚本位于目标项目允许的工具/任务目录、Unity 导入范围之外。要求 Coplay MCP 的项目仍只使用 Coplay；脚本放到外部不改变 Editor 操作通道。
+不要为匹配旧示例目录克隆或覆盖导出配置，也不要先错误导出再搬目录冒充现成工具输出。用户明确要求的资源迁移另按对应范围执行，并与工具新写出、已有资源复用分别记录。最小自动化调用代码位于项目允许的工具/任务目录、Unity 导入范围之外；不新增导出器、代码生成器或永久菜单。要求 Coplay MCP 的项目仍只使用 Coplay。
 
 PSD 源路径沿用项目明确约定及用户指定位置，不从旧样例推导统一存储目录。盘点已有图片与 Common 资源，再决定复用或导出：
 
@@ -44,11 +43,11 @@ PSD 源路径沿用项目明确约定及用户指定位置，不从旧样例推�
 
 调用前执行 [导出前整理稿检查](psd-preparation.md#导出前整理稿检查)，确保实际输入是已核验版本；直接调用导出工具、临时导出与重导入验证均适用。
 
-核对 `client/Assets/A_PLink_Public/Scripts/Editor/PSUIResolver/Editor/Importer/` 下当前实现。PSD Inspector 的 `Generate Prefab` 由 `PS2UIResolver.PsImporterEditor.ExecuteExportNow(importer, true)` 执行切图与 Prefab 输出，该入口当前为私有方法。外部自动化需要控制图片复用时，沿用现有服务链：
+核对 `client/Assets/A_PLink_Public/Scripts/Editor/PSUIResolver/Editor/Importer/` 下当前实现，确认本次 `_UI.psd / _UI.psb` 已使用现成 `PsScriptedImporter`，并读取其实际设置。必须使用 PSD Inspector 的 `Generate Prefab` 或它的同一入口 `PS2UIResolver.PsImporterEditor.ExecuteExportNow(importer, true)`，由工具完成切图、复用、图集和 Prefab 输出。
 
-`PsFileParser.Parse` → `PsLayerTreeBuilder.BuildTree` → `PsTextureExportService.ExportTextures` → `PsPrefabExportService.GeneratePrefab`。
+该入口当前为私有方法，可通过 Coplay 的最小调用代码反射执行，传入实际 importer；这只替代点击操作，不替代工具实现。不得另行串联 Parse、BuildTree、ExportTextures、GeneratePrefab 等底层服务，不创建任务专用生成器，也不复制工程设置以重定向正式输出。图片复用与覆盖沿用该工具的现有处理，不能为了避开弹窗切换到自写流程。
 
-这些服务当前位于 `PS2UIResolver`，部分类型为 internal；核对签名后可从外部 Coplay 脚本反射调用，不向 `Assets` 添加桥接脚本。服务接收 `PsImporterSettings`（通常取自 importer.settings）和 `PsProjectSettings.instance`；检查导出结果的 `Cancelled`、Prefab 生成的布尔结果和保存后的实际资源。document 用完需 Dispose。按需导出缺失或变化图片时，最终 Prefab 仍使用完整图层树与完整资源映射，包含已核验的复用资源和新导出资源，不能只传本次导出图层集合；暂不能证明一致的图片也按上述规则隔离导出比较。
+检查工具的取消/失败状态、实际日志和保存后的资源，记录真正使用的入口、配置来源与输出路径；新写出、迁移、复用分别说明。候选隔离也必须使用现成工具支持的方式，不能借隔离要求重写导出链。工具仍无法执行时报告该阶段阻断，不用自制产物补齐流程。
 
 ## 节点与代码
 
@@ -92,7 +91,7 @@ Skills
 
 ## 生成与刷新
 
-完整制作流程在 Prefab 减法和布局完成后执行本节；已有指定阶段边界时按用户范围处理。复用现有生成与刷新代码，不新增工程内绑定辅助脚本。生成的面板/Item 类和 Mono 属于绑定产物；具体业务功能随后按需求实现。
+完整制作流程在 Prefab 减法和布局完成后执行本节；已有指定阶段边界时按用户范围处理。必须使用现成 XUGUI 代码生成与刷新工具，面板、Item、Mono、Auto 及初始骨架由工具创建；不自行实现另一套模板写出、生成扫描或绑定赋值逻辑，外部调用代码也不例外。具体业务功能随后按需求实现。
 
 维护任务按 [已有链条维护](existing-ui-maintenance.md) 区分：每次 PSD 合并到正式 Prefab 后都调用本节工具流程；用户仅调整适配时检查显示、维护原说明，不运行生成或刷新。[仅修改手写功能代码](existing-ui-maintenance.md#仅修改手写功能代码) 且节点、绑定组件与序列化引用需求均未变化时，不运行生成或刷新。用户确认正式 Prefab 改动清单后，对清单内的绑定及功能代码不再二次确认。
 
