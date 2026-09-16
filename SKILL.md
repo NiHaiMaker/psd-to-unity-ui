@@ -87,6 +87,8 @@ PLink 项目先读 [PLink 接入与生成边界](references/plink-integration.md
 
 ### 4. 锚点与布局
 
+同时检查设计稿文字的 [描边与阴影](references/prefab-postprocessing.md#文字描边与阴影)：缺失时在 Prefab 编辑阶段补齐对应内置或项目既有组件；TMP 使用其 Shader 支持的材质效果。保护共享材质，不重复叠加已有或烘焙效果，不在运行时补组件。固定文本也检查这些视觉效果，记录到原第二份说明并纳入适配恢复。
+
 以本次确认的目标尺寸为设计坐标（完整流程默认 750×1334），按语义设置锚点、布局与安全区：背景保持比例并覆盖画面；logo 保持比例；进度条的槽与填充作为同一功能组；文字检查边距和可读性。具体对齐位置以设计稿为准，不能把样例的所有中心锚点当成通用规则。
 
 同级序列按真实排列使用 HorizontalLayoutGroup 或 VerticalLayoutGroup，以 LayoutElement 表达单元尺寸；只在容器需随内容伸缩时使用 ContentSizeFitter。同一 RectTransform 的同一轴只保留一个尺寸控制者，不能让手写定位与布局组件同时驱动位置。组件配置、模板是否占位及验证方法见上述参考。
