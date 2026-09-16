@@ -1,4 +1,4 @@
 interface:
   display_name: "PSD 到 Unity UI"
-  short_description: "从 PSD 新建或维护 UI，保留正式适配、按清单合并并用现有工具绑定"
-  default_prompt: "使用 $psd-to-unity-ui，先检查版本，有更新时提示我，拒绝则使用本地版本；再识别新建或已有链条维护，保留源 PSD，_UI 转 Prefab 与 Prefab 生成代码都必须调用项目现成工具的同一入口，不自写替代工具；修改正式 Prefab 前列出改动清单供我确认，我仅修改适配时检查显示并维护原说明，工程内不新增辅助工具脚本。"
+  short_description: "固定整理稿按新建流程生成 UI，通过当前说明恢复适配，维护已有业务与新视觉接入"
+  default_prompt: "使用 $psd-to-unity-ui，源更新先对比源稿、固定 _UI 和当前两份说明，差异经我审核后更新 _UI、生成 Prefab、结合两份 MD 更新整理、减法及布局适配记录并生成代码，仅修复或补全已有功能；不修改框架、导入器或生成器源码。"
