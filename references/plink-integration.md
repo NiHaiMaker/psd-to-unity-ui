@@ -18,6 +18,10 @@
 
 缺少某份资料时不能假设已安装对应能力，应检查目标项目的替代入口及工具源码。若目标项目要求 Coplay MCP，所有 Unity Editor 交互只通过 Coplay；不得改用 batchmode、另一自动化通道或直接编辑资源 YAML 绕过。保持 Enter Play Mode Options、Reload Domain、Reload Scene 不变，除非用户明确授权修改。
 
+### 简单属性修改优先使用专用工具
+
+通过 Coplay 修改单项属性或 RectTransform 时，先核对当前专用工具（如 `set_property`、`set_rect_transform`）的参数、Prefab 目标支持及保存行为；能满足本次修改要求就优先使用，不默认编写 `execute_script`。专用工具不能完成时，再使用项目允许的最小脚本调用。此选择仅适用于属性编辑，不替代 PSD 生成和 UI 代码生成的现成入口。原调用超时时，先按已有超时规则核验实际状态，不能同时换工具重复写入。
+
 ## 资源与导入
 
 使用目标项目现有的 PSUIResolver；旧 PSD2UI 只用于明确的兼容需求，不因本 Skill 自动安装或替换导入工具。本 Skill 禁止修改框架、PSD 导入器、UI 代码生成器及共享运行基类源码；手写代码仅限本次业务/UI 逻辑，正常资源配置与现成工具生成不受此限制。发现工具缺陷只核实并准确报告，工具开发必须作为另行明确委托的独立任务，不能从本流程顺势扩展。
@@ -48,6 +52,8 @@ PSD 源路径沿用项目明确约定及用户指定位置，不从旧样例推�
 核对 `client/Assets/A_PLink_Public/Scripts/Editor/PSUIResolver/Editor/Importer/` 下当前实现，确认本次 `_UI.psd / _UI.psb` 已使用现成 `PsScriptedImporter`，并读取其实际设置。必须使用 PSD Inspector 的 `Generate Prefab` 或它的同一入口 `PS2UIResolver.PsImporterEditor.ExecuteExportNow(importer, true)`，由工具完成切图、复用、图集和 Prefab 输出。
 
 该入口当前为私有方法，可通过 Coplay 的最小调用代码反射执行，传入实际 importer；这只替代点击操作，不替代工具实现。不得另行串联 Parse、BuildTree、ExportTextures、GeneratePrefab 等底层服务，不创建任务专用生成器，也不复制工程设置以重定向正式输出。图片复用与覆盖沿用该工具的现有处理，不能为了避开弹窗切换到自写流程。
+
+图片复用/覆盖窗口由用户手动确认。调用导出前提醒用户留意 Unity 窗口；普通 Editor 中仅复用相同图片也可能弹出 `PSUIResolver Texture Overwrite`。检测到窗口或工具明确报告等待确认时，提示用户核对复用与覆盖列表并在 Unity 中手动确认，暂停依赖该导出的后续步骤；不代点确认，不以 BatchMode、反射返回确认结果或改工具来绕过。若仅收到调用超时而未确认弹窗状态，应说明可能在等待手动确认，先核验实际状态，不重复触发导出。用户确认后核对本次调用结果及实际产物，再继续；用户取消则报告取消状态，不自动重试。没有出现窗口时不增加额外人工确认。
 
 检查工具的取消/失败状态、实际日志和保存后的资源，记录真正使用的入口、配置来源与输出路径；新写出、迁移、复用分别说明。当前约定 `_UI` 是实际导入输入，先确认工具覆盖规则能够保留正式身份及恢复适配。用户另行要求的隔离也只能用现成工具支持的方式；不得为实现任何输出方式重写或修改导出链。工具仍无法执行时报告该阶段阻断，不用自制产物补齐流程。
 
